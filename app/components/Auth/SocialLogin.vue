@@ -1,0 +1,10 @@
+<template>
+  <div>
+    <AuthButton
+      label="Google"
+      icon="i-logos-google-icon"
+      path="/api/auth/google"
+      block
+    />
+  </div>
+</template>
