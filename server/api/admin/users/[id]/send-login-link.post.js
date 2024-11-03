@@ -45,13 +45,13 @@ export default defineEventHandler(async event => {
   if (!userRecord) {
     throw createError({
       statusCode: 400,
-      message: "User not found",
+      message: "Usuário não encontrado, por favor, crie uma conta",
     });
   }
   if (!userRecord.emailVerified) {
     throw createError({
       statusCode: 400,
-      message: "User has not verified their email",
+      message: "Usuário não verificou seu email",
     });
   }
   const emailVerificationCode = await generateEmailVerificationCode(
@@ -66,6 +66,6 @@ export default defineEventHandler(async event => {
   setResponseStatus(event, 200);
   return {
     status: "success",
-    message: "One Time Password sent to your email",
+    message: "Código de acesso enviado para seu email",
   };
 });

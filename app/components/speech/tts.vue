@@ -1,6 +1,5 @@
 <template>
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900 font-inter">
-        <PopUpCredits v-if="showCreditsModal" :showModal="showCreditsModal" @close="showCreditsModal = false" />
         <AppPageContainer title="Converta Texto em Fala"
             description="Desfrute da potência da nossa tecnologia avançada para gerar fala realista e cativante em uma ampla gama de idiomas.">
 
@@ -21,11 +20,11 @@
                             <div class="flex items-center space-x-2">
                                 <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Caracteres:</span>
                                 <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                                    {{ userUsage?.charactersUsed || 0 }} / {{ userPlan?.monthlyCredits }}
+                                    {{ formattedUsage }}
                                 </span>
                             </div>
                         </div>
-                        <button @click="showCreditsModal = true"
+                        <button @click="navigateToBilling"
                             class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                             Fazer upgrade
                         </button>
@@ -101,10 +100,11 @@ import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headless
 import { ChevronDown, Play, Pause, CheckIcon } from 'lucide-vue-next'
 import AudioPlayer from './AudioPlayer.vue'
 import { useUserSession } from '#imports'
-import PopUpCredits from '../App/Billing/PopUpCredits.vue'
 import VoiceList from './voice-list.vue'
 import { useFetch } from '#imports'
 import { useNuxtApp } from '#app'
+import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
 
 // Refs essenciais
 const text = ref('')
@@ -145,7 +145,6 @@ watch(favoriteVoices, (newVoices) => {
 }, { immediate: true })
 
 const charactersUsed = ref(0)
-const showCreditsModal = ref(false)
 const audioCache = ref(new Map())
 const { user, refreshUser } = useUserSession()
 const userUsage = ref(null)
@@ -159,6 +158,11 @@ const userInfo = ref(null)
 
 // Adicione estas refs
 const userPlan = ref(null)
+
+// Atualizar o charactersUsed quando userUsage mudar
+watch(() => userUsage.value?.charactersUsed, (newValue) => {
+    charactersUsed.value = newValue || 0
+})
 
 // Manter apenas esta função
 const refreshUsage = async () => {
@@ -174,7 +178,8 @@ const refreshUsage = async () => {
     userUsage.value = {
       charactersUsed: data.creditosAtuais,
       charactersTotal: data.totalDisponivel,
-      extraCredits: data.creditosExtras || 0
+      extraCredits: data.creditosExtras || 0,
+      lastUpdated: data.ultimaAtualizacao
     }
   } catch (error) {
     console.error('Erro ao atualizar dados de uso:', error)
@@ -185,9 +190,10 @@ const refreshUsage = async () => {
 
 // Computed properties
 const formattedUsage = computed(() => {
-  if (!userInfo.value?.usage) return '0/0'
-  const { charactersUsed, charactersTotal, extraCredits } = userInfo.value.usage
-  return `${charactersUsed}/${charactersTotal + extraCredits}`
+  const usage = userUsage.value
+  if (!usage) return '0 / 0'
+  const { charactersUsed, charactersTotal, extraCredits } = usage
+  return `${charactersUsed} / ${charactersTotal + (extraCredits || 0)}`
 })
 
 const planName = computed(() => {
@@ -198,9 +204,7 @@ const planName = computed(() => {
 onMounted(() => {
   refreshUsage()
   
-  // Adicionar listener para atualização da subscription
   window.addEventListener('subscription-updated', async (event) => {
-    console.log('🔔 Evento subscription-updated recebido:', event.detail)
     await refreshUsage()
   })
 })
@@ -245,6 +249,12 @@ const toggleAudioPreview = async (voiceId) => {
 const generateSpeech = async () => {
     if (text.value.length === 0) return
 
+    // Adicione esta verificação no início da função
+    if (!selectedVoice.value) {
+        toast.error('Por favor, selecione uma voz antes de gerar o áudio.')
+        return
+    }
+
     // Verificar caracteres disponíveis
     if (userUsage.value) {
         const { creditosAtuais, totalDisponivel, creditosExtras } = userUsage.value
@@ -253,7 +263,7 @@ const generateSpeech = async () => {
         if (total !== -1) {
             const remainingCredits = total - creditosAtuais
             if (remainingCredits < text.value.length) {
-                showCreditsModal.value = true
+                navigateToBilling()
                 return
             }
         }
@@ -289,7 +299,10 @@ const generateSpeech = async () => {
             generatedAudioSrc.value = URL.createObjectURL(audioBlob)
 
             // Atualiza os dados de uso após gerar o áudio com sucesso
-            await refreshUsage()
+            await Promise.all([
+                refreshUsage(),
+                refreshUser()
+            ])
         })
 
         await nextTick()
@@ -299,7 +312,7 @@ const generateSpeech = async () => {
 
     } catch (error) {
         if (error.message === 'Limite de caracteres excedido') {
-            showCreditsModal.value = true
+            navigateToBilling()
         } else {
             alert(error.message)
         }
@@ -339,18 +352,15 @@ onUnmounted(() => {
 
 // Chame a função quando o componente for montado
 onMounted(async () => {
-    console.log('🎬 Componente montado, iniciando refresh...')
     await refreshUsage()
 })
 
 // Atualizar quando houver mudanças na assinatura
 watch(() => user.value?.subscription?.variantId, async (newVariantId, oldVariantId) => {
-    console.log('👀 Mudança detectada na subscription:', {
-        anterior: oldVariantId,
-        novo: newVariantId
-    })
-    await refreshUsage()
-})
+    if (newVariantId !== oldVariantId) {
+        await refreshUsage()
+    }
+}, { immediate: true })
 
 // Antes dos outros setups, adicione:
 const { data: initialUsage } = await useFetch('/api/user/usage/verify')
@@ -377,6 +387,12 @@ onMounted(async () => {
     await refreshUsage()
   }
 })
+
+// Adicionar função de navegação
+const router = useRouter()
+const navigateToBilling = () => {
+    router.push('/dashboard/settings/billing')
+}
 </script>
 
 <style>

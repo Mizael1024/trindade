@@ -2,11 +2,10 @@ import { eq, and } from "drizzle-orm";
 import { SubscriptionStatus } from "~~/server/services/payment/types";
 import { planActions } from './PlanActions';
 import { userUsageActions } from './UserUsageActions';
-import { db } from '~~/server/services/db';
+import { useDB, tables } from '../../utils/db';
 
 class UserActions {
-  constructor(db) {
-    this.db = db;
+  constructor() {
   }
 
   async findUserByEmail(email) {
@@ -475,4 +474,4 @@ class UserActions {
   }
 }
 
-export const userActions = new UserActions(db);
+export const userActions = new UserActions();

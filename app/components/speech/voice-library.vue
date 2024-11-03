@@ -117,9 +117,7 @@ const mainCategories = [
 ]
 
 const subCategories = [
-    { id: 'all', label: 'Todas' },
-    { id: 'filmes', label: 'Filmes' },
-    { id: 'animações', label: 'Animações' }
+    { id: 'all', label: 'Todas' }
 ]
 
 watch(error, (newError) => {

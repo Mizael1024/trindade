@@ -1,15 +1,13 @@
 import Stripe from "stripe";
 import { SubscriptionStatus } from "~~/server/services/payment/types";
 import { subscriptionActions } from "~~/server/services/db/SubscriptionActions";
-import { usePayment } from "~~/server/services/payment";
-import { voiceCloneActions } from "~~/server/services/db/VoiceCloneActions";
-import { voiceClonePackages } from "~~/server/config/voiceClonePackages";
+
 
 export default defineEventHandler(async event => {
   try {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
-      throw new Error("Stripe Webhook Secret is missing");
+      throw new Error("Chave secreta do webhook do Stripe ausente");
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -19,7 +17,7 @@ export default defineEventHandler(async event => {
     if (!stripeSignature || !body) {
       throw createError({
         statusCode: 400,
-        statusMessage: "Missing required webhook data",
+        statusMessage: "Dados do webhook ausentes",
       });
     }
 
@@ -29,11 +27,12 @@ export default defineEventHandler(async event => {
       webhookSecret,
     );
 
+    // Evento de atualização de assinatura
     if (stripeEvent.type === 'customer.subscription.updated') {
       const subscription = stripeEvent.data.object;
       const productId = subscription.items.data[0].price.product;
 
-      const payload = {
+      await subscriptionActions.updateOrCreateSubscription({
         id: subscription.id,
         userId: subscription.metadata?.user_id,
         customerId: subscription.customer,
@@ -45,72 +44,64 @@ export default defineEventHandler(async event => {
         nextPaymentDate: new Date(subscription.current_period_end * 1000),
         createdAt: new Date(subscription.created * 1000),
         updatedAt: new Date()
-      };
-
-      console.log('Processando atualização de subscription:', payload);
-      await subscriptionActions.updateOrCreateSubscription(payload);
+      });
     }
 
+    // Evento de conclusão de checkout
     if (stripeEvent.type === 'checkout.session.completed') {
       const session = stripeEvent.data.object;
       
+      // Processamento de assinatura
       if (session.subscription) {
-        if (!session.subscription) return "OK"; // Ignora se não for uma subscription
-        
-        const subscription = await stripe.subscriptions.retrieve(session.subscription);
-        const productId = subscription.items.data[0].price.product;
+        try {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          const productId = subscription.items.data[0].price.product;
+          const variantId = session.metadata?.variant_id || subscription.items.data[0].price.id;
+          const userId = session.metadata?.user_id;
 
-        const payload = {
-          id: session.subscription,
-          userId: session.metadata?.user_id,
-          customerId: session.customer,
-          type: 'subscription',
-          planId: productId,
-          variantId: session.metadata?.variant_id || subscription.items.data[0].price.id,
-          status: SubscriptionStatus.ACTIVE,
-          paymentProvider: "stripe",
-          nextPaymentDate: new Date(subscription.current_period_end * 1000),
-          createdAt: new Date(session.created * 1000),
-          updatedAt: new Date()
-        };
+          if (!userId) {
+            throw new Error('userId não encontrado');
+          }
 
-        console.log('Processando nova subscription:', payload);
-        await subscriptionActions.updateOrCreateSubscription(payload);
-      } else if (session.metadata?.type === 'voice_clone_package') {
+          await subscriptionActions.updateOrCreateSubscription({
+            id: session.subscription,
+            userId,
+            customerId: session.customer,
+            type: 'subscription',
+            planId: productId,
+            variantId,
+            status: SubscriptionStatus.ACTIVE,
+            paymentProvider: "stripe",
+            nextPaymentDate: new Date(subscription.current_period_end * 1000),
+            createdAt: new Date(session.created * 1000),
+            updatedAt: new Date()
+          });
+        } catch (error) {
+          throw error;
+        }
+      } 
+      // Processamento de pacote de clone de voz
+      else if (session.metadata?.type === 'voice_clone_package') {
         const packageId = session.metadata.packageId;
         const userId = session.metadata.userId;
         
         const voiceClonePackage = voiceClonePackages[packageId];
-        
         if (!voiceClonePackage) {
-          console.error('Pacote não encontrado:', packageId);
           return "OK";
         }
 
-        try {
-          await voiceCloneActions.processPurchase({
-            userId,
-            planId: voiceClonePackage.id,
-            credits: voiceClonePackage.credits,
-            stripePaymentId: session.payment_intent,
-            status: 'paid'
-          });
-          
-          console.log('Créditos processados com sucesso:', {
-            userId,
-            planId: voiceClonePackage.id,
-            credits: voiceClonePackage.credits
-          });
-        } catch (error) {
-          console.error('Erro ao processar créditos:', error);
-          throw error;
-        }
+        await voiceCloneActions.processPurchase({
+          userId,
+          planId: voiceClonePackage.id,
+          credits: voiceClonePackage.credits,
+          stripePaymentId: session.payment_intent,
+          status: 'paid'
+        });
       }
     }
 
     return "OK";
   } catch (error) {
-    console.error('Erro no webhook:', error);
     throw createError({
       statusCode: 500,
       statusMessage: "Internal Server Error",

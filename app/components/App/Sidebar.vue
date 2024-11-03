@@ -4,9 +4,8 @@
   <div
     class="flex-col items-stretch relative w-full border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-white/10 lg:w-64 flex-shrink-0 hidden lg:flex"
   >
-    <div class="flex h-12 px-6">
+    <div class="flex h-12 px-6 mt-4">
       <NuxtLink to="/dashboard" class="flex items-center gap-2 font-semibold">
-        <img src="/logo.png" class="h-6 w-auto" />
         <span class="">Voicefy</span>
       </NuxtLink>
     </div>
@@ -37,12 +36,11 @@
       <div
         class="flex-col flex h-screen items-stretch relative w-full border-gray-200 dark:border-white/10"
       >
-        <div class="flex h-12 px-4 items-center justify-between">
+        <div class="flex h-12 px-4 items-center justify-between mt-4">
           <NuxtLink
             to="/dashboard"
             class="flex items-center gap-2 font-semibold"
           >
-            <img src="/logo.png" class="h-6 w-auto" />
             <span class="">Voicefy</span>
           </NuxtLink>
           <UButton

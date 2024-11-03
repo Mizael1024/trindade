@@ -47,14 +47,14 @@ export default defineEventHandler(async event => {
     if (!user) {
       throw createError({
         statusCode: 400,
-        statusMessage: "User not found",
+        statusMessage: "Usuário não encontrado, por favor, crie uma conta", 
       });
     }
 
     if (!authenticationResponse?.id) {
       throw createError({
         statusCode: 400,
-        statusMessage: "Invalid credentials",
+        statusMessage: "Credenciais inválidas",
       });
     }
 
@@ -64,7 +64,7 @@ export default defineEventHandler(async event => {
     if (!userCredential || userCredential.length === 0) {
       throw createError({
         statusCode: 400,
-        statusMessage: "Invalid credentials",
+        statusMessage: "Credenciais inválidas",
       });
     }
 
@@ -82,7 +82,7 @@ export default defineEventHandler(async event => {
     if (user.banned) {
       throw createError({
         statusCode: 403,
-        statusMessage: "You account has been banned",
+        statusMessage: "Sua conta foi banida",
       });
     }
 
@@ -94,7 +94,7 @@ export default defineEventHandler(async event => {
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage:
-        error.statusMessage || `Internal Server Error: ${error.message}`,
+        error.statusMessage || `Erro interno do servidor: ${error.message}`,
     });
   }
 });

@@ -49,20 +49,29 @@ class UserUsageActions {
 
   async updateTotalCharacters(userId, total) {
     try {
-      await useDB()
-        .insert(tables.userUsage)
-        .values({
-          userId,
-          charactersUsed: 0,
-          charactersTotal: total
-        })
-        .onConflictDoUpdate({
-          target: tables.userUsage.userId,
-          set: {
+      const [currentUsage] = await useDB()
+        .select()
+        .from(tables.userUsage)
+        .where(eq(tables.userUsage.userId, userId))
+
+      if (currentUsage) {
+        await useDB()
+          .update(tables.userUsage)
+          .set({
             charactersTotal: total,
             lastUpdated: new Date()
-          }
-        })
+          })
+          .where(eq(tables.userUsage.userId, userId))
+      } else {
+        await useDB()
+          .insert(tables.userUsage)
+          .values({
+            userId,
+            charactersUsed: 0,
+            charactersTotal: total,
+            lastUpdated: new Date()
+          })
+      }
     } catch (error) {
       console.error('Erro ao atualizar total de caracteres:', error)
       throw error

@@ -25,9 +25,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig();
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  const baseUrl = config.public.BASE_URL || 'https://app.voicefy.com.br';
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const stripe = new Stripe(config.public.STRIPE_SECRET_KEY);
   const session = await stripe.checkout.sessions.create({
     line_items: [{
       price: voiceClonePackage.priceId,

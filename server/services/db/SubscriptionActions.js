@@ -4,6 +4,7 @@ import { subscriptions, userUsage } from '../../database/schema';
 import { userActions } from './UserActions';
 import Stripe from 'stripe';
 import { useDB, tables } from '../../utils/db';
+import { userUsageActions } from './UserUsageActions';
 
 class SubscriptionActions {
   async updateOrCreateSubscription(payload) {
@@ -17,14 +18,19 @@ class SubscriptionActions {
         throw new Error(`User not found for email: ${customer.email}`);
       }
 
-      // Buscar o plano pelo variantId (price_id)
+      // Buscar o plano pelo productId_stripe
       const [plan] = await db
-        .select()
+        .select({
+          id: tables.plans.id,
+          name: tables.plans.name,
+          monthlyCredits: tables.plans.monthly_credits,
+          productId: tables.plans.productId_stripe
+        })
         .from(tables.plans)
-        .where(eq(tables.plans.priceId_stripe, payload.variantId));
+        .where(eq(tables.plans.productId_stripe, payload.planId));
 
       if (!plan && payload.status !== SubscriptionStatus.CANCELED) {
-        throw new Error(`Plano não encontrado para o price_id: ${payload.variantId}`);
+        throw new Error(`Plano não encontrado para o product_id: ${payload.planId}`);
       }
 
       const subscription = {
@@ -32,7 +38,7 @@ class SubscriptionActions {
         userId: user.id,
         customerId: payload.customerId,
         type: payload.type,
-        planId: plan?.productId_stripe || 'FREE',
+        planId: payload.planId,
         variantId: payload.variantId,
         status: payload.status,
         paymentProvider: payload.paymentProvider,
@@ -41,6 +47,7 @@ class SubscriptionActions {
         updatedAt: payload.updatedAt
       };
 
+      // Atualiza ou cria a assinatura
       await db.insert(subscriptions)
         .values(subscription)
         .onConflictDoUpdate({
@@ -48,25 +55,13 @@ class SubscriptionActions {
           set: subscription
         });
 
-      await db.update(userUsage)
-        .set({
-          charactersTotal: plan?.monthly_credits || 500,
-          lastUpdated: new Date()
-        })
-        .where(eq(userUsage.userId, user.id));
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('subscription-updated', {
-          detail: {
-            subscription,
-            planCredits: plan?.monthly_credits || 500
-          }
-        }));
+      // Atualiza o user_usage com os créditos mensais do plano
+      if (plan) {
+        await userUsageActions.resetAndUpdateTotalCharacters(user.id, plan.monthlyCredits);
       }
 
       return subscription;
     } catch (error) {
-      console.error('Failed to sync subscription:', error);
       throw new Error('Failed to sync subscription');
     }
   }
@@ -79,7 +74,6 @@ class SubscriptionActions {
         .where(eq(subscriptions.userId, userId));
       return subscription || null;
     } catch (error) {
-      console.error(error);
       return null;
     }
   }
@@ -92,7 +86,6 @@ class SubscriptionActions {
         .where(eq(subscriptions.id, id));
       return subscription || null;
     } catch (error) {
-      console.error(error);
       return null;
     }
   }
@@ -112,7 +105,6 @@ class SubscriptionActions {
       const updatedSubscription = await updateOrCreateSubscription(payload);
       return updatedSubscription;
     } catch (error) {
-      console.error(error);
       throw new Error("Failed to cancel subscription");
     }
   }
