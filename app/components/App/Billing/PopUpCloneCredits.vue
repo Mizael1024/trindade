@@ -81,6 +81,10 @@ const handleCheckout = async (packageId) => {
   try {
     isLoading.value = packageId
     
+    if (!['CLONE_1', 'CLONE_3', 'CLONE_5'].includes(packageId)) {
+      throw new Error('Pacote inválido');
+    }
+    
     const response = await $fetch('/api/payment/voice-clone/checkout', {
       method: 'POST',
       body: {

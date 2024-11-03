@@ -44,7 +44,8 @@ export default defineNuxtConfig({
     jwtSecret: process.env.JWT_SECRET_TOKEN,
     allowedProductIds: process.env.ALLOWED_PRODUCT_IDS,
     stripe: {
-      secretKey: process.env.STRIPE_SECRET_KEY
+      secretKey: process.env.STRIPE_SECRET_KEY,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     },
   },
   // https://hub.nuxt.com/docs/getting-started/installation#options
@@ -52,5 +53,21 @@ export default defineNuxtConfig({
     blob: true,
     database: true,
     kv: true,
+  },
+  nitro: {
+    routeRules: {
+      '/**': {
+        headers: {
+          'Content-Security-Policy': [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com blob:",
+            "style-src 'self' 'unsafe-inline'",
+            "frame-src 'self' https://js.stripe.com https://checkout.stripe.com",
+            "img-src 'self' data: blob: https://*.stripe.com",
+            "connect-src 'self' https://api.stripe.com https://checkout.stripe.com"
+          ].join('; ')
+        }
+      }
+    }
   }
 });

@@ -37,8 +37,15 @@ export default defineEventHandler(async (event) => {
   const stripe = new Stripe(config.stripe.secretKey);
 const session = await stripe.checkout.sessions.create({
   line_items: [{
-    price: voiceClonePackage.priceId,
-    quantity: 1
+    price: voiceClonePackage.priceId.trim(),
+    quantity: 1,
+    price_data: !voiceClonePackage.priceId ? {
+      currency: 'brl',
+      product_data: {
+        name: voiceClonePackage.name,
+      },
+      unit_amount: voiceClonePackage.credits * 9900,
+    } : undefined,
   }],
   mode: 'payment',
   success_url: `${baseUrl}/dashboard?success=true`,
@@ -47,14 +54,15 @@ const session = await stripe.checkout.sessions.create({
   metadata: {
     userId: user.id,
     type: 'voice_clone_package',
-    packageId: packageId
+    packageId: packageId,
+    credits: voiceClonePackage.credits
   }
 });
 
-  console.log('Config:', {
-    stripeKey: config.stripe?.secretKey ? 'Presente' : 'Ausente',
-    package: voiceClonePackage,
-    priceId: voiceClonePackage?.priceId
+  console.log('Checkout Session:', {
+    packageId,
+    priceId: voiceClonePackage.priceId,
+    credits: voiceClonePackage.credits
   });
 
   return { url: session.url };
