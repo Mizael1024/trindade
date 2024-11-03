@@ -43,6 +43,9 @@ export default defineNuxtConfig({
     },
     jwtSecret: process.env.JWT_SECRET_TOKEN,
     allowedProductIds: process.env.ALLOWED_PRODUCT_IDS,
+    stripe: {
+      secretKey: process.env.STRIPE_SECRET_KEY
+    },
   },
   // https://hub.nuxt.com/docs/getting-started/installation#options
   hub: {

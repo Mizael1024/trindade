@@ -12,7 +12,7 @@
           <h3 class="font-medium mb-2">Clone Individual</h3>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">1 Clone de Voz</p>
           <div class="flex justify-between items-center">
-            <span class="text-lg font-semibold">R$ 29,90</span>
+            <span class="text-lg font-semibold">R$ 99,00</span>
             <UButton color="black" :loading="isLoading === 'CLONE_1'" @click="handleCheckout('CLONE_1')">
               Comprar Agora
             </UButton>
@@ -25,7 +25,7 @@
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">3 Clones de Voz</p>
           <div class="flex justify-between items-center">
             <div>
-              <span class="text-lg font-semibold">R$ 79,90</span>
+              <span class="text-lg font-semibold">R$ 299,00</span>
               <span class="text-sm text-green-600 ml-2">Economia de 11%</span>
             </div>
             <UButton color="black" :loading="isLoading === 'CLONE_3'" @click="handleCheckout('CLONE_3')">
@@ -43,7 +43,7 @@
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">5 Clones de Voz</p>
           <div class="flex justify-between items-center">
             <div>
-              <span class="text-lg font-semibold">R$ 119,90</span>
+              <span class="text-lg font-semibold">R$ 599,00</span>
               <span class="text-sm text-green-600 ml-2">Economia de 20%</span>
             </div>
             <UButton color="blue" :loading="isLoading === 'CLONE_5'" @click="handleCheckout('CLONE_5')">

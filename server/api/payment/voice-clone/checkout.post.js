@@ -27,21 +27,34 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const baseUrl = config.public.BASE_URL || 'https://app.voicefy.com.br';
 
-  const stripe = new Stripe(config.public.STRIPE_SECRET_KEY);
-  const session = await stripe.checkout.sessions.create({
-    line_items: [{
-      price: voiceClonePackage.priceId,
-      quantity: 1
-    }],
-    mode: 'payment',
-    success_url: `${baseUrl}/dashboard?success=true`,
-    cancel_url: `${baseUrl}/dashboard?canceled=true`,
-    customer_email: user.email,
-    metadata: {
-      userId: user.id,
-      type: 'voice_clone_package',
-      packageId: packageId
-    }
+  if (!config.stripe?.secretKey) {
+    throw createError({
+      statusCode: 500,
+      message: 'Configuração do Stripe não encontrada'
+    });
+  }
+
+  const stripe = new Stripe(config.stripe.secretKey);
+const session = await stripe.checkout.sessions.create({
+  line_items: [{
+    price: voiceClonePackage.priceId,
+    quantity: 1
+  }],
+  mode: 'payment',
+  success_url: `${baseUrl}/dashboard?success=true`,
+  cancel_url: `${baseUrl}/dashboard?canceled=true`,
+  customer_email: user.email,
+  metadata: {
+    userId: user.id,
+    type: 'voice_clone_package',
+    packageId: packageId
+  }
+});
+
+  console.log('Config:', {
+    stripeKey: config.stripe?.secretKey ? 'Presente' : 'Ausente',
+    package: voiceClonePackage,
+    priceId: voiceClonePackage?.priceId
   });
 
   return { url: session.url };

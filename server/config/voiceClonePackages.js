@@ -3,21 +3,21 @@ export const voiceClonePackages = {
     id: 'CINCO_CLONES',
     name: '5 Clones de Voz',
     credits: 5,
-    priceId: 'price_1QG7koGJGCWWTgK5v559RHWQ', 
-    productId: 'prod_R6wHb0xWp7jXy9'
+    priceId: process.env.CLONE_5_PRICE_ID,
+    productId: process.env.CLONE_5_PRODUCT_ID
   },
   CLONE_1: {
     id: 'CLONE_1',
-    name: 'Clone Individual',
+    name: 'Clone Individual', 
     credits: 1,
-    priceId: 'price_1QEiOlGJGCWWTgK57GNGkYu8', 
-    productId: 'prod_R6wHb0xWp7jXy9'
+    priceId: process.env.CLONE_1_PRICE_ID,
+    productId: process.env.CLONE_1_PRODUCT_ID
   },
   CLONE_3: {
     id: 'CLONE_3',
     name: '3 Clones de Voz',
     credits: 3,
-    priceId: 'price_1QG7n4GJGCWWTgK56OfY5OS6', 
-    productId: 'prod_R6wHb0xWp7jXy9'
+    priceId: process.env.CLONE_3_PRICE_ID,
+    productId: process.env.CLONE_3_PRODUCT_ID
   }
 };
