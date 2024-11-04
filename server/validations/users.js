@@ -62,16 +62,3 @@ export const otpVerificationSchema = z.object({
   code: z.string().length(6),
   type: z.enum(Object.values(OneTimePasswordTypes)),
 });
-
-export const passkeyVerificationSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1).max(255),
-  verification: z.any().optional(),
-  authenticationResponse: z.any().optional(),
-});
-
-export const passkeyLoginSchema = z.object({
-  email: z.string().email(),
-  challenge: z.string(),
-  authenticationResponse: z.any().optional(),
-});

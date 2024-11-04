@@ -12,19 +12,11 @@ class AdminActions {
             sql`GROUP_CONCAT(DISTINCT ${tables.oauthAccounts.providerId})`.as(
               "linkedAccounts",
             ),
-          hasPasskey:
-            sql`CASE WHEN COUNT(${tables.credentials.id}) > 0 THEN 1 ELSE 0 END`.as(
-              "hasPasskey",
-            ),
         })
         .from(tables.users)
         .leftJoin(
           tables.oauthAccounts,
           eq(tables.users.id, tables.oauthAccounts.userId),
-        )
-        .leftJoin(
-          tables.credentials,
-          eq(tables.users.id, tables.credentials.userId),
         );
 
       // Apply search
@@ -84,7 +76,6 @@ class AdminActions {
         linkedAccounts: record.oauthAccounts
           ? record.oauthAccounts.split(",")
           : [],
-        passkeyConnected: Boolean(record.hasPasskey),
       }));
 
       return {

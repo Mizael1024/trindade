@@ -48,12 +48,27 @@ const currentTime = ref(0)
 const duration = ref(0)
 
 const toggleAudioPlayback = () => {
-    if (!audio.value) return
+    console.log('🎵 Tentando alternar reprodução do áudio')
+    console.log('Estado atual do áudio:', {
+        audioExists: !!audio.value,
+        isPlaying: isPlaying.value,
+        currentTime: currentTime.value,
+        duration: duration.value
+    })
+
+    if (!audio.value) {
+        console.warn('❌ Elemento de áudio não encontrado')
+        return
+    }
 
     if (isPlaying.value) {
+        console.log('⏸️ Pausando áudio')
         audio.value.pause()
     } else {
+        console.log('▶️ Iniciando reprodução')
         audio.value.play()
+            .then(() => console.log('✅ Reprodução iniciada com sucesso'))
+            .catch(error => console.error('❌ Erro ao reproduzir:', error))
     }
     isPlaying.value = !isPlaying.value
 }
@@ -87,39 +102,109 @@ const formatTime = (time) => {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 }
 
-watch(() => props.audioSrc, (newSrc) => {
-    if (newSrc) {
-        audio.value = new Audio(newSrc)
-        audio.value.addEventListener('loadedmetadata', () => {
-            duration.value = audio.value.duration
-        })
-        audio.value.addEventListener('timeupdate', () => {
-            currentTime.value = audio.value.currentTime
-        })
-        audio.value.addEventListener('ended', () => {
-            isPlaying.value = false
-            currentTime.value = 0 // Reinicia o tempo atual para o início
-        })
+const play = () => {
+    console.log('🎵 Método play chamado externamente')
+    if (audio.value) {
+        console.log('▶️ Tentando reproduzir áudio')
+        audio.value.play()
+            .then(() => {
+                console.log('✅ Reprodução iniciada com sucesso')
+                isPlaying.value = true
+            })
+            .catch(error => console.error('❌ Erro ao reproduzir:', error))
+    } else {
+        console.warn('❌ Elemento de áudio não disponível para reprodução')
     }
-})
+}
+
+// Exponha o método play para o componente pai
+defineExpose({ play })
+
+watch(() => props.audioSrc, async (newSrc, oldSrc) => {
+    console.log('🔄 audioSrc alterado:', {
+        oldSrc: oldSrc?.substring(0, 50) + '...',
+        newSrc: newSrc?.substring(0, 50) + '...'
+    })
+
+    try {
+        if (audio.value) {
+            console.log('⏹️ Limpando áudio anterior')
+            audio.value.pause()
+            audio.value.remove()
+            audio.value = null
+        }
+        
+        if (newSrc) {
+            console.log('🆕 Criando novo elemento de áudio')
+            audio.value = document.createElement('audio')
+            audio.value.crossOrigin = 'anonymous'
+            
+            audio.value.addEventListener('loadedmetadata', () => {
+                console.log('📊 Metadados carregados:', {
+                    duration: audio.value.duration,
+                    readyState: audio.value.readyState
+                })
+                duration.value = audio.value.duration
+            })
+            
+            audio.value.addEventListener('timeupdate', () => {
+                currentTime.value = audio.value.currentTime
+            })
+            
+            audio.value.addEventListener('play', () => {
+                console.log('▶️ Evento play disparado')
+                isPlaying.value = true
+            })
+
+            audio.value.addEventListener('pause', () => {
+                console.log('⏸️ Evento pause disparado')
+                isPlaying.value = false
+            })
+            
+            audio.value.addEventListener('ended', () => {
+                console.log('⏹️ Áudio finalizado')
+                isPlaying.value = false
+                currentTime.value = 0
+            })
+            
+            audio.value.addEventListener('error', (e) => {
+                console.error('❌ Erro no áudio:', {
+                    error: e,
+                    errorCode: audio.value.error?.code,
+                    errorMessage: audio.value.error?.message,
+                    src: audio.value.src
+                })
+            })
+
+            audio.value.addEventListener('canplay', () => {
+                console.log('✅ Áudio pronto para reprodução')
+            })
+
+            audio.value.addEventListener('waiting', () => {
+                console.log('⏳ Aguardando dados do áudio')
+            })
+
+            audio.value.src = newSrc
+            
+            await audio.value.load()
+            
+            console.log('🎵 Elemento de áudio configurado:', {
+                src: audio.value.src,
+                readyState: audio.value.readyState
+            })
+        }
+    } catch (error) {
+        console.error('❌ Erro ao configurar áudio:', error)
+    }
+}, { immediate: true })
 
 onMounted(() => {
-    if (props.audioSrc) {
-        audio.value = new Audio(props.audioSrc)
-        audio.value.addEventListener('loadedmetadata', () => {
-            duration.value = audio.value.duration
-        })
-        audio.value.addEventListener('timeupdate', () => {
-            currentTime.value = audio.value.currentTime
-        })
-        audio.value.addEventListener('ended', () => {
-            isPlaying.value = false
-            currentTime.value = 0 // Reinicia o tempo atual para o início
-        })
-    }
+    console.log('🎵 AudioPlayer montado')
+    console.log('audioSrc inicial:', props.audioSrc)
 })
 
 onUnmounted(() => {
+    console.log('🗑️ AudioPlayer desmontado')
     if (audio.value) {
         audio.value.pause()
         audio.value = null

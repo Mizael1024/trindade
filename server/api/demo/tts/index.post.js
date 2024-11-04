@@ -68,6 +68,9 @@ export default defineEventHandler(async (event) => {
     }
 
     event.node.res.setHeader('Content-Type', 'audio/mpeg');
+    event.node.res.setHeader('Accept-Ranges', 'bytes');
+    event.node.res.setHeader('Cache-Control', 'no-cache');
+    event.node.res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     return response;
 
   } catch (error) {

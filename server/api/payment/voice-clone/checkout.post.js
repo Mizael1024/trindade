@@ -10,60 +10,70 @@ const checkoutSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  await authMiddleware(event);
-  const { user } = event.context;
-  const { packageId, redirectUrl } = await readValidatedBody(event, (body) =>
-    checkoutSchema.parse(body)
-  );
+  try {
+    await authMiddleware(event);
+    const { user } = event.context;
+    const { packageId, redirectUrl } = await readValidatedBody(event, (body) =>
+      checkoutSchema.parse(body)
+    );
 
-  const voiceClonePackage = voiceClonePackages[packageId];
-  if (!voiceClonePackage) {
+    const config = useRuntimeConfig();
+    
+    // Log para debug
+    console.log('Config:', {
+      hasStripe: !!config.stripe,
+      hasSecretKey: !!config.stripe?.secretKey,
+      baseUrl: config.public.baseUrl
+    });
+
+    if (!config.stripe?.secretKey) {
+      throw createError({
+        statusCode: 500,
+        message: 'Configuração do Stripe não encontrada'
+      });
+    }
+
+    const voiceClonePackage = voiceClonePackages[packageId];
+    if (!voiceClonePackage) {
+      throw createError({
+        statusCode: 400,
+        message: "Pacote inválido"
+      });
+    }
+
+    const stripe = new Stripe(config.stripe.secretKey);
+    
+    // Log para debug
+    console.log('Criando sessão com:', {
+      packageId,
+      priceId: voiceClonePackage.priceId,
+      email: user.email
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      line_items: [{
+        price: voiceClonePackage.priceId,
+        quantity: 1
+      }],
+      mode: 'payment',
+      success_url: `${config.public.baseUrl}/dashboard?success=true`,
+      cancel_url: `${config.public.baseUrl}/dashboard?canceled=true`,
+      customer_email: user.email,
+      metadata: {
+        userId: user.id,
+        type: 'voice_clone_package',
+        packageId: packageId,
+        credits: voiceClonePackage.credits
+      }
+    });
+
+    return { url: session.url };
+  } catch (error) {
+    console.error('Erro no checkout:', error);
+    
     throw createError({
-      statusCode: 400,
-      message: "Pacote inválido"
+      statusCode: error.statusCode || 500,
+      message: error.message || 'Erro interno no servidor'
     });
   }
-
-  const config = useRuntimeConfig();
-  const baseUrl = config.public.BASE_URL || 'https://app.voicefy.com.br';
-
-  if (!config.stripe?.secretKey) {
-    throw createError({
-      statusCode: 500,
-      message: 'Configuração do Stripe não encontrada'
-    });
-  }
-
-  const stripe = new Stripe(config.stripe.secretKey);
-const session = await stripe.checkout.sessions.create({
-  line_items: [{
-    price: voiceClonePackage.priceId.trim(),
-    quantity: 1,
-    price_data: !voiceClonePackage.priceId ? {
-      currency: 'brl',
-      product_data: {
-        name: voiceClonePackage.name,
-      },
-      unit_amount: voiceClonePackage.credits * 9900,
-    } : undefined,
-  }],
-  mode: 'payment',
-  success_url: `${baseUrl}/dashboard?success=true`,
-  cancel_url: `${baseUrl}/dashboard?canceled=true`,
-  customer_email: user.email,
-  metadata: {
-    userId: user.id,
-    type: 'voice_clone_package',
-    packageId: packageId,
-    credits: voiceClonePackage.credits
-  }
-});
-
-  console.log('Checkout Session:', {
-    packageId,
-    priceId: voiceClonePackage.priceId,
-    credits: voiceClonePackage.credits
-  });
-
-  return { url: session.url };
 });

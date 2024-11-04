@@ -15,10 +15,6 @@ interface Props {
 
 defineProps<Props>()
 defineEmits(['play', 'toggle-favorite'])
-
-const handleImageError = (event: Event) => {
-    (event.target as HTMLImageElement).src = '@default-avatar.png'
-}
 </script>
 
 <template>
@@ -44,9 +40,9 @@ const handleImageError = (event: Event) => {
                     overflow-hidden 
                     border border-gray-300 dark:border-gray-600
                     bg-white dark:bg-gray-800">
-                    <img :src="voice.profileUrl || '@/default-avatar.png'" :alt="voice.name ?? ''"
+                    <img :src="voice.profileUrl || '/images/default-avatar.png'" :alt="voice.name ?? ''"
                         class="h-full w-full object-cover"
-                        @error="handleImageError" />
+                        @error="(event) => { const target = event.target as HTMLImageElement; target.src = '/images/default-avatar.png' }" />
                 </div>
             </div>
 

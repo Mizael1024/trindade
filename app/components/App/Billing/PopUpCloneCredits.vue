@@ -64,6 +64,8 @@
 
 <script setup>
 import { ref } from 'vue'
+import { toast } from 'vue-sonner'
+
 const { user } = useUserSession()
 
 const isLoading = ref(null)
@@ -95,10 +97,16 @@ const handleCheckout = async (packageId) => {
     
     if (response?.url) {
       window.location.href = response.url
+    } else {
+      throw new Error('URL de checkout não encontrada')
     }
   } catch (error) {
     console.error('Erro ao criar checkout:', error)
-    alert('Erro ao processar pagamento. Tente novamente.')
+    const errorMessage = error.data?.message || 
+      error.message || 
+      'Erro ao processar pagamento. Tente novamente.'
+    
+    toast.error(errorMessage)
   } finally {
     isLoading.value = null
   }

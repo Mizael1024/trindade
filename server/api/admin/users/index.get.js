@@ -34,7 +34,6 @@ export default defineEventHandler(async event => {
     ...sanitizeUser(record, true),
     hasPassword: record.hashedPassword && record.hashedPassword.length > 0,
     linkedAccounts: record.linkedAccounts,
-    passkeyConnected: record.passkeyConnected,
   }));
 
   return {

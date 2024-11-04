@@ -249,7 +249,6 @@ const toggleAudioPreview = async (voiceId) => {
 const generateSpeech = async () => {
     if (text.value.length === 0) return
 
-    // Adicione esta verificação no início da função
     if (!selectedVoice.value) {
         toast.error('Por favor, selecione uma voz antes de gerar o áudio.')
         return
@@ -296,13 +295,18 @@ const generateSpeech = async () => {
             }
 
             const audioBlob = await audioResponse.blob()
+            if (generatedAudioSrc.value) {
+                URL.revokeObjectURL(generatedAudioSrc.value)
+            }
             generatedAudioSrc.value = URL.createObjectURL(audioBlob)
 
-            // Atualiza os dados de uso após gerar o áudio com sucesso
-            await Promise.all([
-                refreshUsage(),
-                refreshUser()
-            ])
+            await nextTick()
+            if (audioPlayerRef.value) {
+                audioPlayerRef.value.play()
+            }
+
+            // Atualiza apenas os dados de uso após gerar o áudio com sucesso
+            await refreshUsage()
         })
 
         await nextTick()
@@ -314,7 +318,7 @@ const generateSpeech = async () => {
         if (error.message === 'Limite de caracteres excedido') {
             navigateToBilling()
         } else {
-            alert(error.message)
+            toast.error(error.message || 'Erro ao gerar áudio')
         }
     } finally {
         isGenerating.value = false

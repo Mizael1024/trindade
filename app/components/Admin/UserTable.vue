@@ -56,19 +56,6 @@
         </div>
       </template>
 
-      <template #passkeyConnected-data="{ row }">
-        <UIcon
-          name="i-ph-check-circle-duotone"
-          v-if="row.passkeyConnected"
-          class="text-green-500 text-2xl"
-        />
-        <UIcon
-          name="i-ph-circle-duotone"
-          v-else
-          class="text-2xl text-gray-300 dark:text-gray-600"
-        />
-      </template>
-
       <template #createdAt-data="{ row }">
         {{ formatDate(row.createdAt) }}
       </template>
@@ -130,7 +117,6 @@ const columns = [
   { key: "createdAt", label: "Criado" },
   { key: "lastActive", label: "Última atividade" },
   { key: "linkedAccounts", label: "Conectado" },
-  { key: "passkeyConnected", label: "Passkey" },
   { key: "actions", label: "" },
 ];
 

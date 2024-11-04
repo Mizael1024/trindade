@@ -40,12 +40,16 @@ export default defineNuxtConfig({
     paymentProvider: process.env.PAYMENT_PROVIDER,
     public: {
       baseUrl: process.env.BASE_URL,
+      stripe: {
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+      }
     },
     jwtSecret: process.env.JWT_SECRET_TOKEN,
     allowedProductIds: process.env.ALLOWED_PRODUCT_IDS,
     stripe: {
       secretKey: process.env.STRIPE_SECRET_KEY,
-      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     },
   },
   // https://hub.nuxt.com/docs/getting-started/installation#options
@@ -60,11 +64,12 @@ export default defineNuxtConfig({
         headers: {
           'Content-Security-Policy': [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com blob:",
-            "style-src 'self' 'unsafe-inline'",
-            "frame-src 'self' https://js.stripe.com https://checkout.stripe.com",
-            "img-src 'self' data: blob: https://*.stripe.com",
-            "connect-src 'self' https://api.stripe.com https://checkout.stripe.com"
+            "media-src 'self' blob: *",
+            "img-src 'self' * data:",
+            "connect-src 'self' *",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com"
           ].join('; ')
         }
       }
