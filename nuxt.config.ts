@@ -73,6 +73,9 @@ export default defineNuxtConfig({
           ].join('; ')
         }
       }
+    },
+    rollupConfig: {
+      external: ['fsevents']
     }
   }
 });
